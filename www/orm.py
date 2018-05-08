@@ -32,11 +32,11 @@ async def select(sql, args, size=None):
 	global __pool
 	async with __pool.get() as conn:
 		async with conn.cursor(aiomysql.DictCursor) as cur:
-		    await cur.execute(sql.replace('?','%s'), args or ())
-		    if size:
-			    rs = await cur.fetchmany(size)
-		    else:
-			    rs = await cur.fetchall()
+			await cur.execute(sql.replace('?','%s'), args or ())
+			if size:
+				rs = await cur.fetchmany(size)
+			else:
+				rs = await cur.fetchall()
 		logging.info('rows returned: %s' % len(rs))
 		return rs
 
@@ -47,8 +47,8 @@ async def execute(sql, args, autocommit=True):
 			await conn.begin()
 		try:
 			async with conn.cursor(aiomysql.DictCursor) as cur:
-			    await cur.execute(sql.replace('?','%s'), args) 
-			    affected = cur.rowcount
+				await cur.execute(sql.replace('?','%s'), args)
+				affected = cur.rowcount
 			if not autocommit:
 				await conn.commit()
 		except BaseException as e:
@@ -87,7 +87,7 @@ class BooleanFeild(Field):
 class IntegerFeild(Field):
 	"""docstring for IntegerFeild"""
 	def __init__(self, name=None, primary_key=False, default=0):
-		super().__init__(name, bigint, primary_key,default)
+		super().__init__(name, 'bigint', primary_key,default)
 
 class FloatFeild(Field):
 	"""docstring for FloatFeild"""
@@ -116,12 +116,12 @@ class ModelMetaclass(type):
 				if v.primary_key:
 					#找到主键
 					if primaryKey:
-						raise StandardError('Duplicate primary key field: %s' % k)
+						raise RuntimeError('Duplicate primary key field: %s' % k)
 					primaryKey = k
 				else:
 					fields.append(k)
 		if not primaryKey:
-			raise StandardError('Primary key not found.')
+			raise RuntimeError('Primary key not found.')
 		for k in mappings.keys():
 			attrs.pop(k)
 		escaped_fields = list(map(lambda f: '`%s`' % f, fields))
